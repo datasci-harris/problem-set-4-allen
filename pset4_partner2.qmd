@@ -1,5 +1,5 @@
 ---
-title: "Your Title"
+title: "ps4"
 format: 
   pdf:
     keep-tex: true
@@ -23,6 +23,18 @@ include-before-body:
 
 ## Submission Steps (10 pts)
 
+```{python}
+import pandas as pd
+import geopandas as gpd
+import matplotlib.pyplot as plt
+from shapely.geometry import Polygon
+from shapely.geometry import MultiPoint
+from shapely.ops import unary_union
+from shapely.ops import nearest_points
+import time
+from pyproj import CRS
+```
+
 ## Download and explore the Provider of Services (POS) file (10 pts)
 
 1. 
@@ -36,12 +48,157 @@ include-before-body:
 
 ## Identify hospital closures in POS file (15 pts) (*)
 
+```{python}
+# Read csv files and specify encoding as ISO-8859-1 to avoid error
+df_2016 = pd.read_csv("POS_File_Hospital_Non_Hospital_Facilities_Q4_2016.csv", encoding="ISO-8859-1")
+df_2017 = pd.read_csv("POS_File_Hospital_Non_Hospital_Facilities_Q4_2017.csv", encoding="ISO-8859-1")
+df_2018 = pd.read_csv("POS_File_Hospital_Non_Hospital_Facilities_Q4_2018.csv", encoding="ISO-8859-1")
+df_2019 = pd.read_csv("POS_File_Hospital_Non_Hospital_Facilities_Q4_2019.csv", encoding="ISO-8859-1")
+# Add column 'year' for filtering
+df_2016['Year'] = 2016
+df_2017['Year'] = 2017
+df_2018['Year'] = 2018
+df_2019['Year'] = 2019
+# Merge data
+all_years = pd.concat([df_2016, df_2017, df_2018, df_2019], ignore_index=True)
+# Check data types and size
+all_years.dtypes
+all_years.shape
+```
+
+```{python}
+# Filter datasets for short-term hospitals in each year
+df_2016_filtered = df_2016[(df_2016['PRVDR_CTGRY_SBTYP_CD'] == 1) & (df_2016['PRVDR_CTGRY_CD'] == 1)]
+df_2017_filtered = df_2017[(df_2017['PRVDR_CTGRY_SBTYP_CD'] == 1) & (df_2017['PRVDR_CTGRY_CD'] == 1)]
+df_2018_filtered = df_2018[(df_2018['PRVDR_CTGRY_SBTYP_CD'] == 1) & (df_2018['PRVDR_CTGRY_CD'] == 1)]
+df_2019_filtered = df_2019[(df_2019['PRVDR_CTGRY_SBTYP_CD'] == 1) & (df_2019['PRVDR_CTGRY_CD'] == 1)]
+all_years_filtered = all_years[(all_years['PRVDR_CTGRY_SBTYP_CD'] == 1) & (all_years['PRVDR_CTGRY_CD'] == 1)]
+
+# Combine 2017-2019 data and filter
+df_2017_2019 = pd.concat([df_2017, df_2018, df_2019], ignore_index=True)
+df_2017_2019_filtered = df_2017_2019[(df_2017_2019['PRVDR_CTGRY_SBTYP_CD'] == 1) & (df_2017_2019['PRVDR_CTGRY_CD'] == 1)]
+
+# Output row counts only
+print(df_2016_filtered.shape[0]) 
+print(df_2017_filtered.shape[0])  
+print(df_2018_filtered.shape[0])  
+print(df_2019_filtered.shape[0])  
+print(all_years_filtered.shape[0])  
+print(df_2017_2019_filtered.shape[0])  
+```
+
 1. 
+```{python}
+# Filter hospitals active in 2016 & non-active in 2017-2019
+active_2016 = df_2016_filtered[df_2016_filtered["PGM_TRMNTN_CD"] == 0]
+non_active_2017_2019 = df_2017_2019_filtered[df_2017_2019_filtered["PGM_TRMNTN_CD"] != 0]
+
+# Merge active 2016 hospitals with 2017-2019 non-active records
+merged_hospitals = active_2016.merge(
+    non_active_2017_2019[["PRVDR_NUM", "PGM_TRMNTN_CD", "Year"]],
+    on="PRVDR_NUM", 
+    how="left", 
+    indicator=True
+)
+
+# Assign non-active year to Closure_Year in merged dataset using Year_y
+merged_hospitals["Closure_Year"] = merged_hospitals["Year_y"]
+
+# Keep only hospitals present in both datasets (active in 2016 and non-active after)
+closed_hospitals = merged_hospitals[merged_hospitals["_merge"] == "both"]
+
+# Find hospitals active in 2016 but disappeared in 2017-2019
+disappeared_hospitals = active_2016[~active_2016["PRVDR_NUM"].isin(df_2017_2019_filtered["PRVDR_NUM"])]
+disappeared_hospitals = disappeared_hospitals.assign(Closure_Year=2017)
+
+# Combine non-active hospitals and disappeared hospitals
+all_closed_hospitals = pd.concat([closed_hospitals, disappeared_hospitals], ignore_index=True)
+
+# Sort by unique CMS number and closure year
+all_closed_hospitals.sort_values(by=["PRVDR_NUM", "Closure_Year"], ascending=[False, True], inplace=True)
+
+# Keep the first year each hospital became non-active after 2016
+final_closed_hospitals = all_closed_hospitals.groupby("PRVDR_NUM").aggregate(
+    FAC_NAME=("FAC_NAME", "first"),
+    ZIP_CD=("ZIP_CD", "first"),
+    Closure_Year=("Closure_Year", "first")
+).reset_index()
+
+# Convert ZIP_CD and Closure_Year to integer type
+final_closed_hospitals["ZIP_CD"] = final_closed_hospitals["ZIP_CD"].astype(int)
+final_closed_hospitals["Closure_Year"] = final_closed_hospitals["Closure_Year"].astype(int)
+
+# Display the number of hospitals suspected to have closed by 2019
+num_closed_hospitals = final_closed_hospitals.shape[0]
+print(num_closed_hospitals)
+
+# Just to check
+print(final_closed_hospitals.head())
+```
+
 2. 
+```{python}
+# Sort by facility name
+closed_hospitals_sorted = final_closed_hospitals.sort_values(by="FAC_NAME")
+
+# Select and print the first 10 rows and display the names and closure year
+first_10_closed_hospitals = closed_hospitals_sorted[["FAC_NAME", "Closure_Year"]].head(10)
+print(first_10_closed_hospitals)
+```
+
 3. 
     a.
+```{python}
+# Count active hospitals per zip codes per year
+active_hospitals_by_zip = all_years_filtered.groupby(["ZIP_CD", "Year"]).size().reset_index(name="Active_Hospitals")
+
+# Identify zip codes with no decrease in active hospitals after suspected closures
+closures_with_merger_check = final_closed_hospitals.merge(
+    active_hospitals_by_zip, 
+    left_on=["ZIP_CD", "Closure_Year"], 
+    right_on=["ZIP_CD", "Year"], 
+    how="left"
+)
+
+closures_with_merger_check["Next_Year"] = closures_with_merger_check["Closure_Year"] + 1
+
+# Get active hospital counts for the year following each suspected closure
+closures_with_merger_check = closures_with_merger_check.merge(
+    active_hospitals_by_zip,
+    left_on=["ZIP_CD", "Next_Year"],
+    right_on=["ZIP_CD", "Year"],
+    how="left",
+    suffixes=('', '_NextYear')
+)
+
+# Mark closures that are suspected of being mergers
+closures_with_merger_check["Potential_Merger"] = (
+    closures_with_merger_check["Active_Hospitals_NextYear"] >= closures_with_merger_check["Active_Hospitals"]
+)
+
+# Filter out suspected mergers
+final_closed_hospitals_corrected = closures_with_merger_check[~closures_with_merger_check["Potential_Merger"]]
+
+# Count the number of hospitals fitting the potential merger/acquisition definition
+num_potential_mergers = closures_with_merger_check["Potential_Merger"].sum()
+
+# Calculate the remaining number of hospitals after removing potential mergers
+num_hospitals_after_correction = final_closed_hospitals_corrected.shape[0]
+
+# Output results
+print("Number of potentially being a merger/acquisition:", num_potential_mergers)
+print("Number of hospitals left after correction:", num_hospitals_after_correction)
+```
+
     b.
-    c.
+```{python}
+# Sort by facility name
+corrected_closed_hospitals_sorted = final_closed_hospitals_corrected.sort_values(by="FAC_NAME")
+
+# Select and display the first 10 in this list of corrected hospital closures
+first_10_corrected_hospitals = corrected_closed_hospitals_sorted[["FAC_NAME", "ZIP_CD", "Closure_Year"]].head(10)
+print(first_10_corrected_hospitals)
+```
 
 ## Download Census zip code shapefile (10 pt) 
 
@@ -53,17 +210,256 @@ include-before-body:
 ## Calculate zip code’s distance to the nearest hospital (20 pts) (*)
 
 1. 
+```{python}
+# Read Shapefile
+file_path_shp = r"C:/Users/Yuzi/Documents/GitHub/problem-set-4-allen/gz_2010_us_860_00_500k/gz_2010_us_860_00_500k.shp"
+zips_all = gpd.read_file(file_path_shp)
+```
+
+```{python}
+# Copy the GeoDataFrame and calculate the centroid of each ZIP code area
+zips_all_centroids = zips_all.copy()
+zips_all_centroids['geometry'] = zips_all_centroids.geometry.centroid # Create a new column
+
+# Print the dimensions of the resulting GeoDataFrame (number of rows and columns)
+print("Dimensions of the resulting GeoDataFrame:", zips_all_centroids.shape)
+
+# Display the first few rows to check
+print(zips_all_centroids.head(10))
+```
+
+Meaning of each Columns:
+* GEO_ID: A unique geographic identifier for each ZIP code area. It includes a prefix (8600000US) with the actual ZIP code.
+* ZCTA5: ZIP Code Tabulation Area (ZCTA) code, created by the U.S. Census Bureau and are very similar to postal ZIP code areas.
+* NAME: Repeats the ZIP code or ZCTA5 code.
+* LSAD: Specifies the Legal/Statistical Area Description. Here, it's set to "ZCTA5".
+* CENSUSAREA: The area of each ZIP code region.
+* geometry: The geometric data, now it contains the centroid points of each ZIP code area, i.e., the arithmetic mean position of all the points in a polygon. Previously, it contained Polygon data, representing the boundary of each ZIP code area.
+
 2. 
+For zip codes (or ZCTA5), I refer to [website1](https://www.zipscore.ai/browse/us/texas/zip-codes), [website2](https://data.census.gov/profile?q=New%20Mexico&g=010XX00US$8600000), [website3](https://gist.github.com/philngo/247226aa89e5abf5869b981b9b841245) and set the criterion that starting with 75-79 and '833'.
+
+```{python}
+# Define Texas zip codes prefixes and specific full code
+texas_prefixes = ('75', '76', '77', '78', '79')
+specific_texas_code = '833'
+
+# Define 4 bordering state zip codesprefixes
+border_states_prefixes = {
+    'New Mexico': ('87', '88'),
+    'Oklahoma': ('73', '74'),
+    'Arkansas': ('71', '72'),
+    'Louisiana': ('70', '71')
+}
+
+# Combine texas and all bordering state zip codes prefixes into a single tuple
+all_border_state_prefixes = texas_prefixes + sum(border_states_prefixes.values(), ())
+
+# Filter Texas zip codes
+zips_texas_centroids = zips_all_centroids[
+    zips_all_centroids['ZCTA5'].str.startswith(texas_prefixes) | 
+    (zips_all_centroids['ZCTA5'] == specific_texas_code)
+]
+
+# Filter Texas and bordering states zip codes
+zips_texas_borderstates_centroids = zips_all_centroids[
+    zips_all_centroids['ZCTA5'].str.startswith(all_border_state_prefixes)
+]
+
+# Count unique zip codes in each subset
+num_texas_zip_codes = zips_texas_centroids['ZCTA5'].nunique()
+num_borderstates_zip_codes = zips_texas_borderstates_centroids['ZCTA5'].nunique()
+
+print(f"Unique Texas zip codes: {num_texas_zip_codes}")
+print(f"Unique Texas and bordering states zip codes: {num_borderstates_zip_codes}")
+
+# Function to check if two polygons intersect
+def polygons_intersect(poly1, poly2):
+    """Return True if two polygons intersect, False otherwise."""
+    return poly1.intersects(poly2)
+
+# Combine all Texas zip codes centroids into a single MultiPoint object and create a convex hull
+texas_centroids = zips_texas_centroids['geometry']
+texas_centroid_union = MultiPoint(list(texas_centroids)).convex_hull
+
+# Identify bordering states by checking intersection with Texas's centroid polygon
+bordering_states = []
+for state, prefixes in border_states_prefixes.items():
+    # Filter zip codes for the current state using centroids
+    state_zip_centroids = zips_all_centroids[zips_all_centroids['ZCTA5'].str.startswith(prefixes)]['geometry']
+    
+    # Combine the state's zip code centroids into a single MultiPoint and create a convex hull
+    state_centroid_union = MultiPoint(list(state_zip_centroids)).convex_hull
+    
+    # Check if the state's centroid polygon intersects with Texas's centroid polygon
+    if polygons_intersect(texas_centroid_union, state_centroid_union):
+        bordering_states.append(state)
+
+print(f"Bordering states: {bordering_states}")
+```
+
 3. 
+```{python}
+# Pre-check data types for better merge
+print(zips_all_centroids.dtypes)
+print(df_2016_filtered['ZIP_CD'].unique())
+```
+```{python}
+# Convert ZIP_CD to string
+df_2016_filtered['ZIP_CD'] = df_2016_filtered['ZIP_CD'].fillna(0).apply(lambda x: str(int(float(x))) if x != '' else '')
+
+# Filter zip codes with at least one active hospital in 2016
+# Only include unique ZIP codes where there is at least one active hospital
+hospitals_2016_zips = df_2016_filtered[df_2016_filtered['PGM_TRMNTN_CD'] == 0][['ZIP_CD']].drop_duplicates()
+
+# Merge to create zips_withhospital_centroids
+zips_withhospital_centroids = zips_texas_borderstates_centroids.merge(
+    hospitals_2016_zips, left_on='ZCTA5', right_on='ZIP_CD', how='inner'
+)
+
+# Check the resulting GeoDataFrame
+print(zips_withhospital_centroids.head())
+```
+
+Answer: 
+* I did a inner merge.
+* I merged on 'ZCTA5' and 'ZIP_CD'.
+
 4. 
     a.
+```{python}
+print(len(zips_texas_centroids))  # The answer is 1935
+```
+```{python}
+# Subset 10 zip codes from zips_texas_centroids
+sample_zips_texas = zips_texas_centroids.sample(10)
+
+# Record start time
+start_time = time.time()
+
+# Initialize a list to store distances to the nearest hospital zip codes
+distances = []
+
+# Calculate the distance from each sample zip codes to the nearest zip codes with a hospital
+for zip_code_geom in sample_zips_texas.geometry:
+    # Find the nearest geometry in zips_withhospital_centroids
+    nearest_geom = nearest_points(zip_code_geom, zips_withhospital_centroids.unary_union)[1]
+    # Calculate distance to the nearest geometry
+    distance = zip_code_geom.distance(nearest_geom)
+    distances.append(distance)
+
+# Record end time
+end_time = time.time()
+
+# Calculate time taken for the sample subset
+sample_duration = end_time - start_time
+print(f"Time taken for 10 zip codes: {sample_duration:.2f} seconds")
+
+# Estimate the total time for the full dataset
+estimated_time_full = (sample_duration / 10) * 1935
+print(f"Estimated time: {estimated_time_full:.2f} seconds")
+```
+
     b.
+```{python}
+# Record start time
+start_time_full = time.time()
+
+# Initialize a list to store distances
+all_distances = []
+
+# Calculate the distance from each sample zip codes to the nearest zip codes with a hospital
+for zip_code_geom in zips_texas_centroids.geometry:
+    # Find the nearest geometry in zips_withhospital_centroids
+    nearest_geom = nearest_points(zip_code_geom, zips_withhospital_centroids.unary_union)[1]
+    # Calculate distance to the nearest geometry
+    distance = zip_code_geom.distance(nearest_geom)
+    all_distances.append(distance)
+
+# Record end time
+end_time_full = time.time()
+
+# Calculate time taken for the full dataset
+actual_duration_full = end_time_full - start_time_full
+print(f"Actual time: {actual_duration_full:.2f} seconds")
+```
+
+Answer:
+* In my latest attempt (I try to run them simultaneously), the estimated time was 0.97 seconds, while the actual time was 0.66 seconds.
+* The estimated time is slightly higher than the actual time, about 32% faster than the estimate. It could be due to factors like caching, resource usage or variability in processing time per zip codes.
+
     c.
+
+```{python}
+# Set path for .prj file
+file_path_prj = r"C:/Users/Yuzi/Documents/GitHub/problem-set-4-allen/gz_2010_us_860_00_500k/gz_2010_us_860_00_500k.prj"
+
+# Read the .prj file content as a WKT string
+with open(file_path_prj, 'r') as f:
+    prj_wkt = f.read()  # This line should be indented
+
+# Create a CRS object from the WKT content
+crs = CRS.from_wkt(prj_wkt)
+
+# Print the CRS information
+print("WKT Projection:", crs.to_wkt())
+```
+
+    Click into the .prj file, I find the code:
+    ```
+    GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137,298.257222101]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]]
+    ```
+    Thus, the projection uses degrees as the unit of measurement.
+
+    The approximate conversion I find is:
+    * 1 degree ≈ 69 (or 69.4) miles
+    * To convert the given unit to miles, we can multiply the result by 69 (or 69.4). ([Reference](https://www.sco.wisc.edu/2022/01/21/how-big-is-a-degree/))
+
 5. 
-    a.
-    b.
-    c.
-    
+It's in degrees as unit.
+```{python}
+# Calculate the average distance in degrees
+average_distance_degrees = sum(all_distances) / len(all_distances)
+
+# Convert the average distance from degrees to miles
+average_distance_miles = average_distance_degrees * 69
+print(f"Average distance in miles: {average_distance_miles:.2f} miles")
+```
+
+Answer:
+* Yes, it make sense.
+* Texas is the second-largest state in the U.S. by area, with many rural areas and a lower population density outside of major cities. This may lead to larger average distance.
+* Rural zip codes may be much farther from the nearest hospital.
+
+```{python}
+# Convert each distance from degrees to miles
+all_distances_miles = [distance * 69 for distance in all_distances]
+
+# Make a copy of zips_texas_centroids
+zips_texas_centroids_copy = zips_texas_centroids.copy()
+
+# Add a new column for distances in miles
+zips_texas_centroids_copy['Distance_to_Nearest_Hospital'] = all_distances_miles
+```
+```{python}
+# Plot the map color-coded by the distance
+fig, ax = plt.subplots(1, 1, figsize=(12, 12))
+zips_texas_centroids_copy.plot(column="Distance_to_Nearest_Hospital", 
+                               cmap="Purples", 
+                               linewidth=0.8, 
+                               ax=ax, 
+                               edgecolor="0.8", 
+                               legend=True)
+
+# Set title and remove coordinate axes
+plt.title("Average Distance to Nearest Hospital for Each zip Code in Texas (miles)")
+plt.axis("off")
+
+# Show the plot
+plt.show()
+```
+
+
 ## Effects of closures on access in Texas (15 pts)
 
 1. 
@@ -72,3 +468,7 @@ include-before-body:
 4. 
 
 ## Reflecting on the exercise (10 pts) 
+2. (Partner 2) 
+* a. In Section 2, We identify zip codes affected by closures by checking if the number of active hospitals decreases after a suspected closure. If the number of active hospitals remains the same or increases in the year following the closure, we flag the closure as a potential merger or acquisition, not an actual loss of access. After filtering out these suspected mergers, we are left with only closures likely to impact hospital access in those zip codes.
+* b. This method of identifying closures by checking for "no decrease" in active hospitals has limitations and may not reliably distinguish between real closures and potential mergers or reclassifications: If the closure reflects only in the data for the same year, a real closure from 2017 to 2018 would show no change, while a false closure (like a merger or reclassification) might show an increase in 2018. This means that the "no decrease" criteria can be misleading, as it cannot accurately confirm the nature of the closure.
+* c. Improvement: i. Track the number of active hospitals over multiple years, since a sustained decrease over several years would more likely indicate a true closure; ii. Consider the impact of hospitals in nearby zip codes, since residents may rely on hospitals in neighboring zip codes (spillover); iii. Cross-reference suspected closures with additional datasets or hospital registry information to identify cases of temporary closures or administrative changes, improving the accuracy.
