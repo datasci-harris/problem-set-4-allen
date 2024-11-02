@@ -1,45 +1,33 @@
 ---
-title: "PS4"
+title: "PSet4"
+author: "Zhengye Chen & Liling Shen"
+date: "Nov 2, 2024"
 format: 
-  html:
-    keep-tex: true
-    include-in-header: 
-       text: |
-         \usepackage{fvextra}
-         \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
-include-before-body:
-  text: |
-    \RecustomVerbatimEnvironment{verbatim}{Verbatim}{
-      showspaces = false,
-      showtabs = false,
-      breaksymbolleft={},
-      breaklines
-    }
+    html: 
+        code-overflow: wrap
+execute:
+  eval: true 
+  echo: true
 ---
-
 **PS4:** Due Sat Nov 2 at 5:00PM Central. Worth 100 points. 
-
 ## Style Points (10 pts)
 ## Submission Steps (10 pts)
-1. This problem set is a paired problem set.
-2. Play paper, scissors, rock to determine who goes first. Call that person Partner 1.
-• Partner 1 (name and cnet ID): Zhengye Chen ,allenzhengyechen
+* 1. This problem set is a paired problem set.
+* 2. Play paper, scissors, rock to determine who goes first. Call that person Partner 1.
+• Partner 1 (name and cnet ID): Zhengye Chen, allenzhengyechen
 • Partner 2 (name and cnet ID): Liling Shen, liling
-3. Partner 1 will accept the ps4 and then share the link it creates with their partner.
-You can only share it with one partner so you will not be able to change it after your partner has accepted.
-4. “This submission is our work alone and complies with the 30538 integrity policy.” Add your initials to indicate your agreement: **ZC** **LS**
-5. “I have uploaded the names of anyone else other than my partner and I worked with
+* 3. Partner 1 will accept the ps4 and then share the link it creates with their partner.
+* 4. “This submission is our work alone and complies with the 30538 integrity policy.” Add your initials to indicate your agreement: **ZC** **LS**
+* 5. “I have uploaded the names of anyone else other than my partner and I worked with
 on the problem set here” (1 point)
-6. Late coins used this pset: **0** Late coins left after submission: **3**
+* 6. Late coins used this pset: **0** Late coins left after submission: **3**
+* 7. Knit your ps4.qmd to an PDF file to make ps4.pdf,
+• The PDF should not be more than 25 pages. Use head() and re-size figures when appropriate.
+* 8. (Partner 1): push ps4.qmd and ps4.pdf to your github repo.
+* 9. (Partner 1): submit ps4.pdf via Gradescope. Add your partner on Gradescope.
+* 10. (Partner 1): tag your submission in Gradescope
 
-
-“This submission is our work alone and complies with the 30538 integrity policy.” **ZC** **LS**
-“I have uploaded the names of anyone else other than my partner and I worked with on the problem set here”
-## Download and explore the Provider of Services (POS) file (10 pts)
-
-
-Set up
-
+## Set up
 ```{python}
 import pandas as pd
 import geopandas as gpd
@@ -50,23 +38,25 @@ import altair as alt
 from shapely.geometry import Polygon
 from shapely.geometry import MultiPoint
 from shapely.ops import unary_union
+from shapely.geometry import Point
 from shapely.ops import nearest_points
 import time
 from pyproj import CRS
 ```
 
+## Download and explore the Provider of Services (POS) file (10 pts)
+
 1. The variables I pulled: 
-FAC_NAME #FacilityName
-CRTFCTN_ACTN_TYPE_CD #termination
-PRVDR_CTGRY_SBTYP_CD #short-term
-PRVDR_CTGRY_CD #hospital
-PRVDR_NUM #CMS
-PGM_TRMNTN_CD #termination
-ZIP_CD #zip code 
+* FAC_NAME   *Facility Name*
+* CRTFCTN_ACTN_TYPE_CD   *Type of Action Code, identifing the reason for the certification*
+* PRVDR_CTGRY_SBTYP_CD   *Provider Category Subtype Code, identifing the subtype of the provider*
+* PRVDR_CTGRY_CD   *Provider Category Code, identifiing the type*
+* PRVDR_NUM   *CMS Certification Number*
+* PGM_TRMNTN_CD   *Termination Code, indicating the current termination status for the provider*
+* ZIP_CD   *Five-digit ZIP code for physical address*
 
 2. 
     a.
-
 ```{python}
 pos2016_df = pd.read_csv\
     ('POS_File_Hospital_Non_Hospital_Facilities_Q4_2016.csv')
@@ -313,6 +303,7 @@ Number of potentially being a merger/acquisition: 96
 
     b.
 Number of hospitals left after correction: 78
+    
     c.
 
 ```{python}
@@ -328,10 +319,30 @@ print(first_10_corrected_hospitals)
 
 1. 
     a.
-The five file types used in GIS data are .dbf, .prj, .shp, .shx, and .xml. The .dbf file holds information about geographic features in a table format. The .prj file specifies the coordinate system and mapping details for the spatial data. The .shp file contains the shapes and locations of the geographic features. The .shx file is an index that helps access the geometric data in the .shp file more quickly. Lastly, the .xml file includes metadata about the shapefile, such as the data source and attribute descriptions. Together, these files help manage and analyze spatial data.
+The five file types used in GIS data are .dbf, .prj, .shp, .shx, and .xml. 
+
+The .dbf file holds information about geographic features in a table format. 
+
+The .prj file specifies the coordinate system and mapping details for the spatial data. 
+
+The .shp file contains the shapes and locations of the geographic features. 
+
+The .shx file is an index that helps access the geometric data in the .shp file more quickly. 
+
+Lastly, the .xml file includes metadata about the shapefile, such as the data source and attribute descriptions. 
+
+Together, these files help manage and analyze spatial data.
 
     b.
-The .dbf file is 6.4MB. The .prj is 165 bytes. The .shp is 837.5MB. The .shx file is 265KB. The .xml file is 16KB.
+The .dbf file is 6.4MB. 
+
+The .prj is 165 bytes. 
+
+The .shp is 837.5MB. 
+
+The .shx file is 265KB. 
+
+The .xml file is 16KB.
 
 2. 
 
@@ -361,6 +372,9 @@ texas_hospitals.plot(
     legend=True  
 )
 
+# Set title and remove coordinate axes
+plt.title("Number of Hospitals per ZIP Code in Texas (2016)")
+plt.axis("off")
 ```
 
 
@@ -402,7 +416,6 @@ For zip codes (or ZCTA5), I refer to [website1](https://www.zipscore.ai/browse/u
 ```{python}
 # Define Texas zip codes prefixes and specific full code
 texas_prefixes = ('75', '76', '77', '78', '79')
-specific_texas_code = '833'
 
 # Define 4 bordering state zip codesprefixes
 border_states_prefixes = {
@@ -417,8 +430,7 @@ all_border_state_prefixes = texas_prefixes + sum(border_states_prefixes.values()
 
 # Filter Texas zip codes
 zips_texas_centroids = zips_all_centroids[
-    zips_all_centroids['ZCTA5'].str.startswith(texas_prefixes) | 
-    (zips_all_centroids['ZCTA5'] == specific_texas_code)
+    zips_all_centroids['ZCTA5'].str.startswith(texas_prefixes)
 ]
 
 # Filter Texas and bordering states zip codes
@@ -484,8 +496,10 @@ print(zips_withhospital_centroids.head())
 ```
 
 Answer: 
-* I did a inner merge.
-* I merged on 'ZCTA5' and 'ZIP_CD'.
+
+I did a inner merge.
+
+I merged on 'ZCTA5' and 'ZIP_CD'.
 
 
 4. 
@@ -494,35 +508,68 @@ Answer:
 ```{python}
 print(len(zips_texas_centroids))  # The answer is 1935
 ```
+
 ```{python}
-# Subset 10 zip codes from zips_texas_centroids
-sample_zips_texas = zips_texas_centroids.sample(10)
+# Make copies and set a sample
+zips_texas_centroids_sample = zips_texas_centroids.sample(10).copy()
+zips_withhospital_centroids_sample = zips_withhospital_centroids.copy()
 
 # Record start time
-start_time = time.time()
+start_time_sample = time.time()
 
-# Initialize a list to store distances to the nearest hospital zip codes
-distances = []
+# Perform a cross join for the sample of 10 ZIP codes
+sample_pairs = zips_texas_centroids_sample.assign(key=1).merge(
+    zips_withhospital_centroids_sample.assign(key=1), on="key", suffixes=('_texas', '_hospital')
+)
 
-# Calculate the distance from each sample zip codes to the nearest zip codes with a hospital
-for zip_code_geom in sample_zips_texas.geometry:
-    # Find the nearest geometry in zips_withhospital_centroids
-    nearest_geom = nearest_points(zip_code_geom, zips_withhospital_centroids.unary_union)[1]
-    # Calculate distance to the nearest geometry
-    distance = zip_code_geom.distance(nearest_geom)
-    distances.append(distance)
+# Calculate distances for each pair in the sample
+sample_pairs["Distance"] = sample_pairs.apply(
+    lambda row: row["geometry_texas"].distance(row["geometry_hospital"]), axis=1
+)
 
-# Record end time
-end_time = time.time()
+# Record end time and calculate duration
+end_time_sample = time.time()
+sample_duration = end_time_sample - start_time_sample
 
-# Calculate time taken for the sample subset
-sample_duration = end_time - start_time
-print(f"Time taken for 10 zip codes: {sample_duration:.2f} seconds")
-
-# Estimate the total time for the full dataset
-estimated_time_full = (sample_duration / 10) * 1935
-print(f"Estimated time: {estimated_time_full:.2f} seconds")
+# Display timing for the sample and estimate total duration
+print(f"Time taken for sample: {sample_duration:.2f} seconds")
+estimated_duration = (sample_duration / 10) * 1935
+print(f"Estimated time: {estimated_duration:.2f} seconds")
 ```
+
+    b.
+
+```{python}
+# Make full copies
+zips_texas_centroids_full = zips_texas_centroids.copy()
+zips_withhospital_centroids_full = zips_withhospital_centroids.copy()
+
+# Record start time for full dataset
+start_time_full = time.time()
+
+# Perform a cross join for the full dataset
+full_pairs = zips_texas_centroids_full.assign(key=1).merge(
+    zips_withhospital_centroids_full.assign(key=1), on="key", suffixes=('_texas', '_hospital')
+)
+
+# Calculate distances for each pair in the full dataset
+full_pairs["Distance"] = full_pairs.apply(
+    lambda row: row["geometry_texas"].distance(row["geometry_hospital"]), axis=1
+)
+
+# Record end time and calculate actual duration
+end_time_full = time.time()
+actual_duration_full = end_time_full - start_time_full
+
+# Display actual time taken for the full calculation
+print(f"Actual time taken: {actual_duration_full:.2f} seconds")
+```
+
+Answer:
+
+In my latest attempt (I try to run them simultaneously), the estimated time was 21.07 seconds, while the actual time was 17.88 seconds.
+
+The actual time (17.88 seconds) was slightly faster than the estimated time (21.07 seconds), with a difference of approximately 15% shorter than estimated. This suggests that the sample-based estimation was reasonably accurate but may have slightly overestimated the full calculation time. The difference could be due to factors like variations in processing time per ZIP code pair, system caching, or other computational efficiencies at scale.
 
 
     b.
@@ -551,8 +598,10 @@ print(f"Actual time: {actual_duration_full:.2f} seconds")
 ```
 
 Answer:
-* In my latest attempt (I try to run them simultaneously), the estimated time was 0.97 seconds, while the actual time was 0.66 seconds.
-* The estimated time is slightly higher than the actual time, about 32% faster than the estimate. It could be due to factors like caching, resource usage or variability in processing time per zip codes.
+
+In my latest attempt (I try to run them simultaneously), the estimated time was 0.97 seconds, while the actual time was 0.66 seconds.
+
+The estimated time is slightly higher than the actual time, about 32% faster than the estimate. It could be due to factors like caching, resource usage or variability in processing time per zip codes.
 
     c.
 
@@ -562,7 +611,7 @@ file_path_prj = "gz_2010_us_860_00_500k.prj"
 
 # Read the .prj file content as a WKT string
 with open(file_path_prj, 'r') as f:
-    prj_wkt = f.read()  # This line should be indented
+    prj_wkt = f.read()
 
 # Create a CRS object from the WKT content
 crs = CRS.from_wkt(prj_wkt)
@@ -571,16 +620,20 @@ crs = CRS.from_wkt(prj_wkt)
 print("WKT Projection:", crs.to_wkt())
 ```
 
-    Click into the .prj file, I find the code:
-    ```
-    GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",\
-    SPHEROID["GRS_1980",6378137,298.257222101]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]]
-    ```
-    Thus, the projection uses degrees as the unit of measurement.
+Click into the .prj file, I find the code:
+```
+GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",\
+SPHEROID["GRS_1980",6378137,298.257222101]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]]
+```
 
-    The approximate conversion I find is:
-    * 1 degree ≈ 69 (or 69.4) miles
-    * To convert the given unit to miles, we can multiply the result by 69 (or 69.4). ([Reference](https://www.sco.wisc.edu/2022/01/21/how-big-is-a-degree/))
+Thus, the projection uses degrees as the unit of measurement.
+
+
+The approximate conversion I find is:
+
+1 degree ≈ 69 (or 69.4) miles
+
+* To convert the given unit to miles, we can multiply the result by 69 (or 69.4). ([Reference](https://www.sco.wisc.edu/2022/01/21/how-big-is-a-degree/))
 
 
 5. 
@@ -591,50 +644,48 @@ It's in degrees as unit.
     b.
 
 ```{python}
-# Calculate the average distance in degrees
-average_distance_degrees = sum(all_distances) / len(all_distances)
+# Convert each calculated distance from degrees to miles
+all_distances_miles = [distance * 69 for distance in all_distances]
 
-# Convert the average distance from degrees to miles
-average_distance_miles = average_distance_degrees * 69
-print(f"Average distance in miles: {average_distance_miles:.2f} miles")
+# Calculate the average of these minimum distances in miles
+average_distance_miles = sum(all_distances_miles) / len(all_distances_miles)
+print(f"Average minimum distance to nearest hospital: {average_distance_miles:.2f} miles")
+
+# Make a copy of zips_texas_centroids and add the minimum distance to nearest hospital (in miles)
+zips_texas_centroids_copy = zips_texas_centroids.copy()
+zips_texas_centroids_copy['Distance_to_Nearest_Hospital'] = all_distances_miles
 ```
 
 Answer:
-* Yes, it make sense.
-* Texas is the second-largest state in the U.S. by area, with many rural areas and a lower population density outside of major cities. This may lead to larger average distance.
-* Rural zip codes may be much farther from the nearest hospital.
+
+The average distance in miles is 14.56 miles. Yes, it make sense.
+
+Texas is the second-largest state in the U.S. by area, with many rural areas and a lower population density outside of major cities. This may lead to larger average distance.
+
+Rural zip codes may be much farther from the nearest hospital.
 
 
     c.
 
 ```{python}
-# Convert each distance from degrees to miles
-all_distances_miles = [distance * 69 for distance in all_distances]
-
-# Make a copy of zips_texas_centroids
-zips_texas_centroids_copy = zips_texas_centroids.copy()
-
-# Add a new column for distances in miles
-zips_texas_centroids_copy['Distance_to_Nearest_Hospital'] = all_distances_miles
-```
-```{python}
-# Plot the map color-coded by the distance
+# Plot the map color-coded by the minimum distance in miles
 fig, ax = plt.subplots(1, 1, figsize=(6, 5))
 zips_texas_centroids_copy.plot(column="Distance_to_Nearest_Hospital", 
-                               cmap="Purples", 
+                               cmap="coolwarm",  # Choose a diverging colormaps
                                linewidth=0.8, 
                                ax=ax, 
                                edgecolor="0.8", 
                                legend=True)
 
 # Set title and remove coordinate axes
-plt.title("Average Distance to Nearest Hospital for Each zip Code in Texas (miles)")
+plt.title("Minimum Distance to Nearest Hospital for Each ZIP Code in Texas (miles)")
 plt.axis("off")
 
 # Show the plot
 plt.show()
 ```
-    
+
+
 ## Effects of closures on access in Texas (15 pts)
 
 1.
@@ -642,7 +693,7 @@ plt.show()
 ```{python}
 final_closed_hospitals_corrected['ZIP_CD'] = final_closed_hospitals_corrected['ZIP_CD'].astype(str)
 
-texas_prefixes = ('75', '76', '77', '78', '79', '855')
+texas_prefixes = ('75', '76', '77', '78', '79')
 texas_closures = final_closed_hospitals_corrected[final_closed_hospitals_corrected['ZIP_CD']\
     .str.startswith(texas_prefixes)]
 
@@ -677,6 +728,10 @@ texas_closures_map.plot(
 
 directly_affected_zip_count = texas_closures_map[texas_closures_map['Number_of_Closures'] > 0].shape[0]
 print(f'Number of directly affected ZIP codes in Texas: {directly_affected_zip_count}')
+
+# Set title and remove coordinate axes
+ax.set_title('Texas ZIP Codes Directly Affected by Hospital Closures (2016-2019)')
+plt.axis("off")
 ```
 
 ```{python}
@@ -715,7 +770,7 @@ print(f'Number of indirectly affected ZIP codes in Texas: {num_indirectly_affect
 
 ```
 
-There are 342 indirectly affected zip codes in Texas?
+There are 342 indirectly affected zip codes in Texas.
 
 4. 
 
@@ -740,7 +795,9 @@ texas_closures_map.plot(
     ax=ax
 )
 ax.set_title('Impact of Hospital Closures on Texas ZIP Codes')
+plt.axis("off")
 plt.show()
+
 
 ```
 
@@ -754,6 +811,14 @@ Temporary closures—such as those for renovations, natural disasters, or public
 To build a more accurate closure identification method, a multi-year analysis would help confirm whether a hospital is truly out of service, as closures that persist for several years are more likely to be permanent. Cross-referencing suspected closures with external data sources, such as state health department records, hospital association databases, or news announcements, could confirm whether a closure is due to a permanent shutdown or an administrative change. Additionally, incorporating the distance to nearby hospitals would help account for closures in neighboring ZIP codes that affect patient access. While the first-pass method is a practical start, a more comprehensive approach that considers geographic context, multi-year trends, and external data verification would improve the reliability of closure identification.
 
 2.
-* a. In Section 2, We identify zip codes affected by closures by checking if the number of active hospitals decreases after a suspected closure. If the number of active hospitals remains the same or increases in the year following the closure, we flag the closure as a potential merger or acquisition, not an actual loss of access. After filtering out these suspected mergers, we are left with only closures likely to impact hospital access in those zip codes.
-* b. This method of identifying closures by checking for "no decrease" in active hospitals has limitations and may not reliably distinguish between real closures and potential mergers or reclassifications: If the closure reflects only in the data for the same year, a real closure from 2017 to 2018 would show no change, while a false closure (like a merger or reclassification) might show an increase in 2018. This means that the "no decrease" criteria can be misleading, as it cannot accurately confirm the nature of the closure.
-* c. Improvement: i. Track the number of active hospitals over multiple years, since a sustained decrease over several years would more likely indicate a true closure; ii. Consider the impact of hospitals in nearby zip codes, since residents may rely on hospitals in neighboring zip codes (spillover); iii. Cross-reference suspected closures with additional datasets or hospital registry information to identify cases of temporary closures or administrative changes, improving the accuracy.
+
+a. In Section 2, We identify zip codes affected by closures by checking if the number of active hospitals decreases after a suspected closure. If the number of active hospitals remains the same or increases in the year following the closure, we flag the closure as a potential merger or acquisition, not an actual loss of access. After filtering out these suspected mergers, we are left with only closures likely to impact hospital access in those zip codes.
+
+b. This method of identifying closures by checking for "no decrease" in active hospitals has limitations and may not reliably distinguish between real closures and potential mergers or reclassifications: If the closure reflects only in the data for the same year, a real closure from 2017 to 2018 would show no change, while a false closure (like a merger or reclassification) might show an increase in 2018. This means that the "no decrease" criteria can be misleading, as it cannot accurately confirm the nature of the closure.
+
+c. Improvement: 
+i. Track the number of active hospitals over multiple years, since a sustained decrease over several years would more likely indicate a true closure; 
+
+ii. Consider the impact of hospitals in nearby zip codes, since residents may rely on hospitals in neighboring zip codes (spillover); 
+
+iii. Cross-reference suspected closures with additional datasets or hospital registry information to identify cases of temporary closures or administrative changes, improving the accuracy.
